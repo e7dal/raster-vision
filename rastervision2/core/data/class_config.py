@@ -13,6 +13,9 @@ class ClassConfig(Config):
     def get_class_id(self, name):
         return self.names.index(name)
 
+    def get_name(self, id):
+        return self.names[id]
+
     def get_null_class_id(self):
         return self.get_class_id(self.null_class)
 
@@ -30,3 +33,6 @@ class ClassConfig(Config):
             raise ConfigError(
                 'The null_class: {} must be in list of class names.'.format(
                     self.null_class))
+
+    def __len__(self):
+        return len(self.names)
