@@ -17,6 +17,8 @@ class ClassConfig(Config):
         return self.names[id]
 
     def get_null_class_id(self):
+        if self.null_class is None:
+            raise ValueError('null_class is not set')
         return self.get_class_id(self.null_class)
 
     def get_color_to_class_id(self):
@@ -27,6 +29,9 @@ class ClassConfig(Config):
             self.null_class = 'null'
             self.names.append('null')
             self.colors.append('black')
+
+    def update(self, pipeline=None):
+        pass
 
     def validate_config(self):
         if self.null_class is not None and self.null_class not in self.names:

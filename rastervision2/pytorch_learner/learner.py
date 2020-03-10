@@ -27,7 +27,6 @@ from albumentations.augmentations.transforms import (
     Blur, RandomRotate90, HorizontalFlip, VerticalFlip, GaussianBlur,
     GaussNoise, RGBShift, ToGray, Resize)
 from albumentations.core.composition import Compose
-from albumentations import BboxParams
 
 from rastervision2.pipeline.filesystem import (
     sync_to_dir, json_to_file, file_to_json, make_dir, zipdir,
@@ -174,7 +173,7 @@ class Learner(ABC):
         return data_dirs
 
     def get_bbox_params(self):
-        return BboxParams(format='coco', label_fields=['category_id'])
+        return None
 
     def get_data_transforms(self):
         cfg = self.cfg
@@ -238,7 +237,7 @@ class Learner(ABC):
             batch_size=batch_sz,
             num_workers=num_workers,
             pin_memory=True,
-            collate_fn=collate_fn)            
+            collate_fn=collate_fn)
         test_dl = DataLoader(
             test_ds,
             shuffle=True,
@@ -353,7 +352,7 @@ class Learner(ABC):
 
     def output_to_numpy(self, out):
         return out.numpy()
-    
+
     def numpy_predict(self, x, raw_out=False):
         """Make a prediction using a TF-formatted (ie. channels last) numpy array.
 
@@ -368,8 +367,8 @@ class Learner(ABC):
         x = self.to_batch(x)
         x = x.permute((0, 3, 1, 2))
         out = self.predict(x, normalize=True, raw_out=raw_out)
-        return self.output_to_numpy(out)        
-    
+        return self.output_to_numpy(out)
+
     def predict_dataloader(self, dl, one_batch=False, return_x=True):
         self.model.eval()
 

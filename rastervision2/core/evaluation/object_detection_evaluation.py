@@ -72,41 +72,40 @@ class ObjectDetectionEvaluation(ClassificationEvaluation):
         class_to_eval_item = {}
 
         for class_id, (tp, fp, fn) in enumerate(zip(tps, fps, fns)):
-            if class_id != class_config.get_null_class_id():
-                gt_count = tp + fn
-                pred_count = tp + fp
-                class_name = class_config.get_name(class_id)
+            gt_count = tp + fn
+            pred_count = tp + fp
+            class_name = class_config.get_name(class_id)
 
-                if gt_count == 0:
-                    eval_item = ClassEvaluationItem(
-                        class_id=class_id, class_name=class_name)
-                elif pred_count == 0:
-                    eval_item = ClassEvaluationItem(
-                        precision=None,
-                        recall=0,
-                        gt_count=gt_count,
-                        class_id=class_id,
-                        class_name=class_name)
-                else:
-                    prec = tp / (tp + fp)
-                    recall = tp / (tp + fn)
-                    f1 = 0.
-                    if prec + recall != 0.0:
-                        f1 = 2 * (prec * recall) / (prec + recall)
-                    count_err = pred_count - gt_count
-                    norm_count_err = None
-                    if gt_count > 0:
-                        norm_count_err = count_err / gt_count
+            if gt_count == 0:
+                eval_item = ClassEvaluationItem(
+                    class_id=class_id, class_name=class_name)
+            elif pred_count == 0:
+                eval_item = ClassEvaluationItem(
+                    precision=None,
+                    recall=0,
+                    gt_count=gt_count,
+                    class_id=class_id,
+                    class_name=class_name)
+            else:
+                prec = tp / (tp + fp)
+                recall = tp / (tp + fn)
+                f1 = 0.
+                if prec + recall != 0.0:
+                    f1 = 2 * (prec * recall) / (prec + recall)
+                count_err = pred_count - gt_count
+                norm_count_err = None
+                if gt_count > 0:
+                    norm_count_err = count_err / gt_count
 
-                    eval_item = ClassEvaluationItem(
-                        precision=prec,
-                        recall=recall,
-                        f1=f1,
-                        count_error=norm_count_err,
-                        gt_count=gt_count,
-                        class_id=class_id,
-                        class_name=class_name)
+                eval_item = ClassEvaluationItem(
+                    precision=prec,
+                    recall=recall,
+                    f1=f1,
+                    count_error=norm_count_err,
+                    gt_count=gt_count,
+                    class_id=class_id,
+                    class_name=class_name)
 
-                class_to_eval_item[class_id] = eval_item
+            class_to_eval_item[class_id] = eval_item
 
         return class_to_eval_item

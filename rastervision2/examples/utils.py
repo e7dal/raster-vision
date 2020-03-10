@@ -6,7 +6,7 @@ import os
 import rasterio
 from shapely.strtree import STRtree
 from shapely.geometry import shape, mapping
-import shapely
+from shapely.ops import transform
 
 from rastervision.core import Box
 from rastervision.data import RasterioCRSTransformer, GeoJSONVectorSource
@@ -110,7 +110,7 @@ def save_image_crop(image_uri,
                             label_crop_uri))
 
                         label_crop_features = [
-                            mapping(shapely.ops.transform(p2m, wp))
+                            mapping(transform(p2m, wp))
                             for wp in w_polys
                         ]
                         label_crop_json = {

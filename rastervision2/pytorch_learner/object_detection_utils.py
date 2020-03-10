@@ -281,7 +281,7 @@ class CocoDataset(Dataset):
         self.img_ids = []
         self.id2ann = {}
         ann_json = file_to_json(annotation_uri)
-    
+
         for img in ann_json['images']:
             img_id = img['id']
             self.img_ids.append(img_id)
@@ -296,7 +296,7 @@ class CocoDataset(Dataset):
     def __getitem__(self, ind):
         img_id = self.img_ids[ind]
         ann = dict(self.id2ann[img_id])
-        
+
         img_fn = ann['image']
         img = Image.open(join(self.img_dir, img_fn))
 
@@ -375,8 +375,10 @@ class MyFasterRCNN(nn.Module):
         super().__init__()
 
         backbone = resnet_fpn_backbone(backbone_arch, pretrained)
+        # Add an extra null class for the bogus boxes.
+        self.null_class_id = num_class_ids
         self.model = FasterRCNN(
-            backbone, num_class_ids, min_size=img_sz, max_size=img_sz)
+            backbone, num_class_ids + 1, min_size=img_sz, max_size=img_sz)
         self.subloss_names = [
             'total_loss', 'loss_box_reg', 'loss_classifier', 'loss_objectness',
             'loss_rpn_box_reg'
@@ -415,7 +417,7 @@ class MyFasterRCNN(nn.Module):
                 class_ids = torch.cat(
                     [
                         y.get_field('class_ids'),
-                        torch.tensor([0], device=input.device)
+                        torch.tensor([self.null_class_id], device=input.device)
                     ],
                     dim=0)
                 bl = BoxList(boxes, class_ids=class_ids)
@@ -442,6 +444,6 @@ class MyFasterRCNN(nn.Module):
         new_boxlists = []
         for bl in boxlists:
             class_ids = bl.get_field('class_ids')
-            non_zero_inds = class_ids != 0
-            new_boxlists.append(bl.ind_filter(non_zero_inds))
+            non_null_inds = class_ids != self.null_class_id
+            new_boxlists.append(bl.ind_filter(non_null_inds))
         return new_boxlists

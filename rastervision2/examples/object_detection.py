@@ -19,9 +19,9 @@ def get_config(runner, test=False):
         root_uri = '/opt/data/examples/cowc-potsdam/local-output'
     else:
         raw_uri = 's3://raster-vision-raw-data/isprs-potsdam'
-        processed_uri = 's3://raster-vision-lf-dev/examples/potsdam/processed-data'
-        root_uri = 's3://raster-vision-lf-dev/examples/potsdam/remote-output'
-    
+        processed_uri = 's3://raster-vision-lf-dev/examples/cowc-potsdam/processed-data'
+        root_uri = 's3://raster-vision-lf-dev/examples/cowc-potsdam/remote-output'
+
     train_ids = ['2_10', '2_11', '2_12', '2_14', '3_11',
                        '3_13', '4_10', '5_10', '6_7', '6_9']
     val_ids = ['2_13', '6_8', '3_10']

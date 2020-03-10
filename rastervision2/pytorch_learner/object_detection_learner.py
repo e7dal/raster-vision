@@ -13,6 +13,7 @@ import torch
 from torch.utils.data import ConcatDataset
 from torchvision import models
 from PIL import Image
+from albumentations import BboxParams
 
 from rastervision2.pytorch_learner.learner import Learner
 from rastervision2.pytorch_learner.utils import (compute_conf_mat_metrics,
@@ -39,6 +40,9 @@ class ObjectDetectionLearner(Learner):
             'map', 'map50', 'mean_f1', 'mean_score_thresh'
         ]
         return metric_names
+
+    def get_bbox_params(self):
+        return BboxParams(format='coco', label_fields=['category_id'])
 
     def get_collate_fn(self):
         return collate_fn
