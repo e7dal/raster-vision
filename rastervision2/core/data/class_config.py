@@ -22,7 +22,7 @@ class ClassConfig(Config):
     def get_color_to_class_id(self):
         return dict([(self.colors[i], i) for i in range(len(self.colors))])
 
-    def update(self, pipeline=None):
+    def ensure_null_class(self):
         if self.null_class is None:
             self.null_class = 'null'
             self.names.append('null')
