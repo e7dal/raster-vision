@@ -377,6 +377,7 @@ class MyFasterRCNN(nn.Module):
         backbone = resnet_fpn_backbone(backbone_arch, pretrained)
         # Add an extra null class for the bogus boxes.
         self.null_class_id = num_class_ids
+
         self.model = FasterRCNN(
             backbone, num_class_ids + 1, min_size=img_sz, max_size=img_sz)
         self.subloss_names = [
