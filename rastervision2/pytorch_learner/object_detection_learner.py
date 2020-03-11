@@ -7,7 +7,6 @@ import glob
 
 import numpy as np
 import matplotlib
-import matplotlib.patches as patches
 matplotlib.use('Agg')  # noqa
 import torch
 from torch.utils.data import ConcatDataset
@@ -21,7 +20,8 @@ from rastervision2.pytorch_learner.utils import (compute_conf_mat_metrics,
 from rastervision2.core.data.utils import color_to_triple
 from rastervision2.pipeline.filesystem import file_to_json
 from rastervision2.pytorch_learner.object_detection_utils import (
-    MyFasterRCNN, CocoDataset, compute_class_f1, compute_coco_eval, collate_fn)
+    MyFasterRCNN, CocoDataset, compute_class_f1, compute_coco_eval, collate_fn,
+    plot_xyz)
 
 log = logging.getLogger(__name__)
 
@@ -132,37 +132,4 @@ class ObjectDetectionLearner(Learner):
         return numpy_out
 
     def plot_xyz(self, ax, x, y, z=None):
-        ax.imshow(x.permute(1, 2, 0))
-        y = y if z is None else z
-
-        scores = y.get_field('scores')
-        for box_ind, (box, class_id) in enumerate(
-                zip(y.boxes, y.get_field('class_ids'))):
-            rect = patches.Rectangle(
-                (box[1], box[0]),
-                box[3] - box[1],
-                box[2] - box[0],
-                linewidth=1,
-                edgecolor='cyan',
-                facecolor='none')
-            ax.add_patch(rect)
-
-            box_label = self.cfg.data.class_names[class_id]
-            if scores is not None:
-                score = scores[box_ind]
-                box_label += ' {:.2f}'.format(score)
-
-            h, w = x.shape[1:]
-            label_height = h * 0.03
-            label_width = w * 0.15
-            rect = patches.Rectangle(
-                (box[1], box[0] - label_height),
-                label_width,
-                label_height,
-                color='cyan')
-            ax.add_patch(rect)
-
-            ax.text(
-                box[1] + w * 0.003, box[0] - h * 0.003, box_label, fontsize=7)
-
-        ax.axis('off')
+        plot_xyz(ax, x, y, self.cfg.data.class_names, z=z)

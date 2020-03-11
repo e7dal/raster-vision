@@ -16,6 +16,7 @@ from pycocotools.cocoeval import COCOeval
 from albumentations import BboxParams
 import numpy as np
 from PIL import Image
+import matplotlib.patches as patches
 
 from rastervision2.pipeline.filesystem import file_to_json, json_to_file
 
@@ -363,6 +364,43 @@ def resnet_fpn_backbone(backbone_name, pretrained):
                            out_channels)
 
 
+def plot_xyz(ax, x, y, class_names, z=None):
+    ax.imshow(x.permute(1, 2, 0))
+    y = y if z is None else z
+
+    scores = y.get_field('scores')
+    for box_ind, (box, class_id) in enumerate(
+            zip(y.boxes, y.get_field('class_ids'))):
+        rect = patches.Rectangle(
+            (box[1], box[0]),
+            box[3] - box[1],
+            box[2] - box[0],
+            linewidth=1,
+            edgecolor='cyan',
+            facecolor='none')
+        ax.add_patch(rect)
+
+        box_label = class_names[class_id]
+        if scores is not None:
+            score = scores[box_ind]
+            box_label += ' {:.2f}'.format(score)
+
+        h, w = x.shape[1:]
+        label_height = h * 0.03
+        label_width = w * 0.15
+        rect = patches.Rectangle(
+            (box[1], box[0] - label_height),
+            label_width,
+            label_height,
+            color='cyan')
+        ax.add_patch(rect)
+
+        ax.text(
+            box[1] + w * 0.003, box[0] - h * 0.003, box_label, fontsize=7)
+
+    ax.axis('off')
+
+
 class MyFasterRCNN(nn.Module):
     """Adapter around torchvision Faster-RCNN.
 
@@ -378,12 +416,14 @@ class MyFasterRCNN(nn.Module):
         # Add an extra null class for the bogus boxes.
         self.null_class_id = num_class_ids
 
+        # XXX added + 2 for testing
         self.model = FasterRCNN(
-            backbone, num_class_ids + 1, min_size=img_sz, max_size=img_sz)
+            backbone, num_class_ids + 2, min_size=img_sz, max_size=img_sz)
         self.subloss_names = [
             'total_loss', 'loss_box_reg', 'loss_classifier', 'loss_objectness',
             'loss_rpn_box_reg'
         ]
+        self.batch_ind = 0
 
     def forward(self, input, targets=None):
         """Forward pass
@@ -417,8 +457,8 @@ class MyFasterRCNN(nn.Module):
                     dim=0)
                 class_ids = torch.cat(
                     [
-                        y.get_field('class_ids'),
-                        torch.tensor([self.null_class_id], device=input.device)
+                        y.get_field('class_ids') + 1,
+                        torch.tensor([self.null_class_id + 1], device=input.device),
                     ],
                     dim=0)
                 bl = BoxList(boxes, class_ids=class_ids)
@@ -432,6 +472,39 @@ class MyFasterRCNN(nn.Module):
             } for bl in _targets]
             loss_dict = self.model(input, _targets)
             loss_dict['total_loss'] = sum(list(loss_dict.values()))
+
+            # xxx
+            # plot input to model during training
+            '''
+            import math
+            import matplotlib
+            matplotlib.use('Agg')  # noqa
+            import matplotlib.pyplot as plt
+            import matplotlib.gridspec as gridspec
+            from rastervision2.pipeline.filesystem import make_dir
+
+            output_path = '/opt/data/examples/cowc-potsdam/debug/{}.png'.format(self.batch_ind)
+            self.batch_ind += 1
+            class_names = ['car', 'null']
+            batch_sz = input.shape[0]
+            ncols = nrows = math.ceil(math.sqrt(batch_sz))
+            fig = plt.figure(
+                constrained_layout=True, figsize=(3 * ncols, 3 * nrows))
+            grid = gridspec.GridSpec(ncols=ncols, nrows=nrows, figure=fig)
+
+            for i in range(batch_sz):
+                ax = fig.add_subplot(grid[i])
+                b = _targets[i]['boxes']
+                l = _targets[i]['labels']
+                bl = BoxList(b, class_ids=l).yxyx()
+                plot_xyz(ax, input[i], bl, class_names)
+
+            make_dir(output_path, use_dirname=True)
+            plt.savefig(output_path)
+            plt.close()
+            '''
+            ####
+
             return loss_dict
 
         out = self.model(input)
@@ -444,7 +517,9 @@ class MyFasterRCNN(nn.Module):
         # Remove bogus background boxes.
         new_boxlists = []
         for bl in boxlists:
-            class_ids = bl.get_field('class_ids')
+            class_ids = bl.get_field('class_ids') - 1
             non_null_inds = class_ids != self.null_class_id
-            new_boxlists.append(bl.ind_filter(non_null_inds))
+            bl = bl.ind_filter(non_null_inds)
+            bl.extras['class_ids'] -= 1
+            new_boxlists.append(bl)
         return new_boxlists
